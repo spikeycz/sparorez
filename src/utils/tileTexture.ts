@@ -30,8 +30,6 @@ export function createTileCanvasFromLayout(
   canvas.width = Math.min(Math.ceil(surfaceWidthCm * pxPerCm), 2048);
   canvas.height = Math.min(Math.ceil(surfaceHeightCm * pxPerCm), 2048);
   const ctx = canvas.getContext('2d')!;
-  const scale = canvas.width / (surfaceWidthCm * pxPerCm); // in case we clamped
-
   // Fill with grout
   ctx.fillStyle = GROUT_COLOR;
   ctx.fillRect(0, 0, canvas.width, canvas.height);

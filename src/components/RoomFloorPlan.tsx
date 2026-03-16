@@ -73,7 +73,7 @@ export default function RoomFloorPlan({ room, selectedWallId, onSelectWall }: Pr
           {(() => {
             const tw = room.floorTileConfig!.width * scale;
             const th = room.floorTileConfig!.height * scale;
-            const lines: JSX.Element[] = [];
+            const lines: React.JSX.Element[] = [];
             for (let x = tw; x < roomW; x += tw) {
               lines.push(
                 <line key={`fv-${x}`} x1={ox + x} y1={oy} x2={ox + x} y2={oy + roomD}

@@ -1,4 +1,4 @@
-import type { Wall, Geberit, Room, ShowerCabin, Niche } from '../types';
+import type { Wall, Geberit, Room, ShowerCabin } from '../types';
 
 export interface CornerObstacle {
   x: number;
@@ -548,7 +548,6 @@ export function calculateFloorLayout(
   return {
     layout: { tiles, fullTiles, cutTiles, leftCut, rightCut, topCut, bottomCut, geberitLayouts: [] },
     obstacles: floorObstacles,
-    showerLayouts: [],
     tileStartX, tileStartY,
   };
 }

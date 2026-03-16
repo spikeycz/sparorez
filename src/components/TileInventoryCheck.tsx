@@ -8,7 +8,7 @@ import ErrorIcon from '@mui/icons-material/Error';
 import type { Room } from '../types';
 import { formatArea } from '../utils/calculations';
 import { getEffectiveDimensions } from '../utils/effectiveDimensions';
-import { calculateTileLayout, calculateFloorLayout, getCornerGeberitObstacles, type LayoutResult, type TileRect } from '../utils/tileLayout';
+import { calculateTileLayout, calculateFloorLayout, getCornerGeberitObstacles, type TileRect } from '../utils/tileLayout';
 
 interface Props {
   rooms: Room[];

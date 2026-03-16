@@ -34,8 +34,10 @@ function loadRooms(storageKey: (base: string) => string): Room[] {
       const parsed = JSON.parse(raw) as Room[];
       if (Array.isArray(parsed) && parsed.length > 0) {
         return parsed.map(r => ({
-          tileThickness: 1.5, showerCabins: [], ...r,
-          walls: r.walls.map(w => ({ niches: [], ...w })),
+          ...r,
+          tileThickness: r.tileThickness ?? 1.5,
+          showerCabins: r.showerCabins ?? [],
+          walls: r.walls.map(w => ({ ...w, niches: w.niches ?? [] })),
         }));
       }
     }

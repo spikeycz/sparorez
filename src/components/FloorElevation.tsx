@@ -32,7 +32,7 @@ export default function FloorElevation({ room, effectiveWidth, effectiveDepth }:
   const result = calculateFloorLayout(room, effW, effD);
   if (!result) return null;
 
-  const { layout, obstacles, tileStartX, tileStartY } = result;
+  const { layout, obstacles, tileStartX } = result;
 
   const svgWidth = 580;
   const availW = svgWidth - PADDING_LEFT - PADDING_RIGHT;
