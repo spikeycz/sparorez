@@ -1,6 +1,6 @@
 import { useState, useMemo } from 'react';
 import { v4 as uuid } from 'uuid';
-import type { Room, Wall, ShowerCabin } from '../types';
+import type { Room, Wall, ShowerCabin, TileConfig } from '../types';
 import {
   Box, Paper, TextField, Typography, Button, Select, MenuItem, FormControlLabel, Checkbox,
   Chip, Collapse, IconButton, Stack,
@@ -20,9 +20,10 @@ import { getCornerGeberitObstacles } from '../utils/tileLayout';
 interface Props {
   room: Room;
   onUpdate: (room: Room) => void;
+  tilePalette?: TileConfig[];
 }
 
-export default function RoomEditor({ room, onUpdate }: Props) {
+export default function RoomEditor({ room, onUpdate, tilePalette }: Props) {
   const [selectedWallId, setSelectedWallId] = useState<string | null>(null);
   const [editingShower, setEditingShower] = useState<string | null>(null);
   const selectedWall = room.walls.find(w => w.id === selectedWallId);
@@ -98,11 +99,28 @@ export default function RoomEditor({ room, onUpdate }: Props) {
           <Typography variant="subtitle2" color="text.secondary" sx={{ mb: 0.5 }}>
             Půdorys — klikni na stěnu
           </Typography>
-          <RoomFloorPlan
-            room={room}
-            selectedWallId={selectedWallId}
-            onSelectWall={setSelectedWallId}
-          />
+          <Box sx={{ display: 'flex', gap: 1, alignItems: 'flex-start' }}>
+            <RoomFloorPlan
+              room={room}
+              selectedWallId={selectedWallId}
+              onSelectWall={setSelectedWallId}
+            />
+
+            {/* Wall selection buttons */}
+            <Box sx={{ display: 'flex', flexDirection: 'column', gap: 0.5 }}>
+              {room.walls.map(w => (
+                <Button
+                  key={w.id}
+                  size="small"
+                  variant={selectedWallId === w.id ? 'contained' : 'outlined'}
+                  onClick={() => setSelectedWallId(selectedWallId === w.id ? null : w.id)}
+                  sx={{ minWidth: 0, px: 1.5, fontSize: 13, textTransform: 'none' }}
+                >
+                  Stěna {w.label}
+                </Button>
+              ))}
+            </Box>
+          </Box>
 
           {/* Floor tile config */}
           <Paper variant="outlined" sx={{ mt: 1.5, p: 1.5 }}>
@@ -110,6 +128,7 @@ export default function RoomEditor({ room, onUpdate }: Props) {
               label="Podlahové dlaždice"
               current={room.floorTileConfig}
               onChange={config => onUpdate({ ...room, floorTileConfig: config })}
+              palette={tilePalette}
             />
           </Paper>
 
@@ -229,6 +248,7 @@ export default function RoomEditor({ room, onUpdate }: Props) {
                           ...room,
                           showerCabins: room.showerCabins.map(s => s.id === sc.id ? { ...s, floorTileConfig: config } : s),
                         })}
+                        palette={tilePalette}
                       />
                     </Box>
                   )}
@@ -273,6 +293,7 @@ export default function RoomEditor({ room, onUpdate }: Props) {
               onUpdate={updateWall}
               effectiveWidth={effectiveDims.walls[selectedWallIdx]?.width}
               effectiveHeight={effectiveDims.walls[selectedWallIdx]?.height}
+              tilePalette={tilePalette}
               cornerObstacles={getCornerGeberitObstacles(
                 room, selectedWallIdx,
                 effectiveDims.walls[selectedWallIdx]?.width ?? selectedWall.width,

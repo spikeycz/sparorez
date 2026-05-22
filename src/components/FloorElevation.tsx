@@ -14,13 +14,13 @@ const PADDING_TOP = 20;
 const PADDING_BOTTOM = 35;
 const TILE_GAP = 0.8;
 
-const FULL_TILE_FILL = '#d9e4e7';
-const FULL_TILE_STROKE = '#73979c';
+const FULL_TILE_FILL = '#e2e8f0';
+const FULL_TILE_STROKE = '#64748b';
 const CUT_TILE_FILL = '#fff3c9';
-const CUT_TILE_STROKE = '#ffcc00';
-const OBSTACLE_FILL = '#f0f4f4';
-const OBSTACLE_STROKE = '#c3d3d5';
-const SHOWER_BORDER_STROKE = '#0095b6';
+const CUT_TILE_STROKE = '#f59e0b';
+const OBSTACLE_FILL = '#f8fafc';
+const OBSTACLE_STROKE = '#cbd5e1';
+const SHOWER_BORDER_STROKE = '#3b82f6';
 
 function formatDim(n: number): string {
   return Number.isInteger(n) ? n.toString() : n.toFixed(1);
@@ -87,7 +87,7 @@ export default function FloorElevation({ room, effectiveWidth, effectiveDepth }:
           <text
             x={tx + tw / 2} y={ty + th / 2}
             textAnchor="middle" dominantBaseline="middle"
-            fontSize={Math.min(9, tw / 3, th / 2)} fill="#193137" fontWeight={600}
+            fontSize={Math.min(9, tw / 3, th / 2)} fill="#1e293b" fontWeight={600}
           >
             {label}
           </text>
@@ -98,20 +98,20 @@ export default function FloorElevation({ room, effectiveWidth, effectiveDepth }:
 
   return (
     <div>
-      <svg width={svgWidth} height={svgHeight} style={{ background: '#f0f4f4', borderRadius: 12, display: 'block' }}>
+      <svg width={svgWidth} height={svgHeight} style={{ background: '#f8fafc', borderRadius: 12, display: 'block' }}>
         <defs>
           <marker id={`arR-floor-${room.id}`} markerWidth="6" markerHeight="6" refX="5" refY="3" orient="auto">
-            <path d="M0,0 L6,3 L0,6" fill="#73979c" />
+            <path d="M0,0 L6,3 L0,6" fill="#64748b" />
           </marker>
           <marker id={`arL-floor-${room.id}`} markerWidth="6" markerHeight="6" refX="1" refY="3" orient="auto">
-            <path d="M6,0 L0,3 L6,6" fill="#73979c" />
+            <path d="M6,0 L0,3 L6,6" fill="#64748b" />
           </marker>
         </defs>
 
         {/* Floor background */}
         <rect
           x={ox} y={oy} width={floorW} height={floorH}
-          fill="#f9fafb" stroke="#193137" strokeWidth={1.5}
+          fill="#f9fafb" stroke="#1e293b" strokeWidth={1.5}
         />
 
         {/* Floor tiles */}
@@ -133,7 +133,7 @@ export default function FloorElevation({ room, effectiveWidth, effectiveDepth }:
               <text
                 x={rx + rw / 2} y={ry + rh / 2}
                 textAnchor="middle" dominantBaseline="middle"
-                fontSize={9} fill="#73979c" fontWeight={600}
+                fontSize={9} fill="#64748b" fontWeight={600}
               >
                 {obs.label}
               </text>
@@ -155,13 +155,13 @@ export default function FloorElevation({ room, effectiveWidth, effectiveDepth }:
           return (
             <g key={`shower-${sc.id}`}>
               <rect x={rx} y={ry} width={rw} height={rh}
-                fill="#d9e4e7" fillOpacity={0.15}
+                fill="#e2e8f0" fillOpacity={0.15}
                 stroke={SHOWER_BORDER_STROKE} strokeWidth={2}
                 strokeDasharray="6,3"
               />
               <text x={rx + rw / 2} y={ry + rh / 2}
                 textAnchor="middle" dominantBaseline="middle"
-                fontSize={10} fill="#193137" fontWeight={600}>
+                fontSize={10} fill="#1e293b" fontWeight={600}>
                 Sprcha
               </text>
             </g>
@@ -178,7 +178,7 @@ export default function FloorElevation({ room, effectiveWidth, effectiveDepth }:
           return (
             <text key={wall.id} x={lx} y={ly}
               textAnchor="middle" dominantBaseline="middle"
-              fontSize={10} fill="#73979c" fontWeight={500}>
+              fontSize={10} fill="#64748b" fontWeight={500}>
               {wall.label}
             </text>
           );
@@ -187,19 +187,19 @@ export default function FloorElevation({ room, effectiveWidth, effectiveDepth }:
         {/* Dimension: width (bottom) */}
         <line
           x1={ox} y1={oy + floorH + 20} x2={ox + floorW} y2={oy + floorH + 20}
-          stroke="#73979c" strokeWidth={1}
+          stroke="#64748b" strokeWidth={1}
           markerStart={`url(#arL-floor-${room.id})`} markerEnd={`url(#arR-floor-${room.id})`}
         />
-        <text x={ox + floorW / 2} y={oy + floorH + 32} textAnchor="middle" fontSize={11} fill="#193137" fontWeight={600}>
+        <text x={ox + floorW / 2} y={oy + floorH + 32} textAnchor="middle" fontSize={11} fill="#1e293b" fontWeight={600}>
           {formatDim(effW)} cm
         </text>
 
         {/* Dimension: depth (left) */}
         <line x1={ox - 14} y1={oy} x2={ox - 14} y2={oy + floorH}
-          stroke="#73979c" strokeWidth={1}
+          stroke="#64748b" strokeWidth={1}
           markerStart={`url(#arL-floor-${room.id})`} markerEnd={`url(#arR-floor-${room.id})`}
         />
-        <text x={ox - 22} y={oy + floorH / 2} textAnchor="middle" fontSize={11} fill="#193137" fontWeight={600}
+        <text x={ox - 22} y={oy + floorH / 2} textAnchor="middle" fontSize={11} fill="#1e293b" fontWeight={600}
           transform={`rotate(-90, ${ox - 22}, ${oy + floorH / 2})`}>
           {formatDim(effD)} cm
         </text>
@@ -210,9 +210,9 @@ export default function FloorElevation({ room, effectiveWidth, effectiveDepth }:
           return (
             <>
               <line x1={cutX} y1={oy - 6} x2={cutX + layout.leftCut * scale} y2={oy - 6}
-                stroke="#ffcc00" strokeWidth={1.5} />
+                stroke="#f59e0b" strokeWidth={1.5} />
               <text x={cutX + layout.leftCut * scale / 2} y={oy - 10}
-                textAnchor="middle" fontSize={9} fill="#193137" fontWeight={600}>
+                textAnchor="middle" fontSize={9} fill="#1e293b" fontWeight={600}>
                 {formatDim(layout.leftCut)}
               </text>
             </>
@@ -226,9 +226,9 @@ export default function FloorElevation({ room, effectiveWidth, effectiveDepth }:
           return (
             <>
               <line x1={cutX} y1={oy - 6} x2={ox + tileEndX * scale} y2={oy - 6}
-                stroke="#ffcc00" strokeWidth={1.5} />
+                stroke="#f59e0b" strokeWidth={1.5} />
               <text x={cutX + layout.rightCut * scale / 2} y={oy - 10}
-                textAnchor="middle" fontSize={9} fill="#193137" fontWeight={600}>
+                textAnchor="middle" fontSize={9} fill="#1e293b" fontWeight={600}>
                 {formatDim(layout.rightCut)}
               </text>
             </>
@@ -247,16 +247,16 @@ export default function FloorElevation({ room, effectiveWidth, effectiveDepth }:
           Řezané: <b>{layout.cutTiles}</b>
         </div>
         {layout.leftCut > 0 && (
-          <div style={{ color: '#193137' }}>
+          <div style={{ color: '#1e293b' }}>
             Okraj L/R: <b>{formatDim(layout.leftCut)} cm</b>
           </div>
         )}
         {layout.topCut > 0 && (
-          <div style={{ color: '#193137' }}>
+          <div style={{ color: '#1e293b' }}>
             Okraj nahoře/dole: <b>{formatDim(layout.topCut)} cm</b>
           </div>
         )}
-        <div style={{ color: '#73979c' }}>
+        <div style={{ color: '#64748b' }}>
           Dlaždice: <b>{room.floorTileConfig?.name}</b>
         </div>
       </div>

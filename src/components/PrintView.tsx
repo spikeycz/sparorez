@@ -92,8 +92,7 @@ export default function PrintView({ rooms, onBack }: Props) {
       </Box>
 
       <Typography variant="h5" sx={{ fontWeight: 700, mb: 1.5, fontFamily: '"Ubuntu", sans-serif' }}>
-        <Box component="span" sx={{ color: '#193137' }}>SIKO</Box>{' '}
-        <Box component="span" sx={{ color: '#0095b6' }}>Sparořez</Box>
+        <Box component="span" sx={{ color: '#1e293b' }}>Sparořez</Box>
         {' — rozpis obkladů a dlažby'}
       </Typography>
 

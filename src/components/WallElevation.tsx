@@ -15,20 +15,19 @@ const PADDING_TOP = 20;
 const PADDING_BOTTOM = 35;
 const TILE_GAP = 0.8; // visual gap between tiles in px
 
-// Colors — SIKO brand palette
-const FULL_TILE_FILL = '#d9e4e7';
-const FULL_TILE_STROKE = '#73979c';
-const CUT_TILE_FILL = '#fff3c9';
-const CUT_TILE_STROKE = '#ffcc00';
-const DOOR_FILL = '#f0f4f4';
-const DOOR_STROKE = '#0095b6';
-const GEBERIT_STROKE = '#ffcc00';
-const GEBERIT_TILE_FULL_FILL = '#c3d3d5';
-const GEBERIT_TILE_FULL_STROKE = '#73979c';
-const GEBERIT_TILE_CUT_FILL = '#fff3c9';
-const GEBERIT_TILE_CUT_STROKE = '#ffcc00';
-const NICHE_FILL = '#e8f4f8';
-const NICHE_STROKE = '#0095b6';
+const FULL_TILE_FILL = '#e2e8f0';
+const FULL_TILE_STROKE = '#64748b';
+const CUT_TILE_FILL = '#fef3c7';
+const CUT_TILE_STROKE = '#f59e0b';
+const DOOR_FILL = '#f1f5f9';
+const DOOR_STROKE = '#3b82f6';
+const GEBERIT_STROKE = '#f59e0b';
+const GEBERIT_TILE_FULL_FILL = '#cbd5e1';
+const GEBERIT_TILE_FULL_STROKE = '#64748b';
+const GEBERIT_TILE_CUT_FILL = '#fef3c7';
+const GEBERIT_TILE_CUT_STROKE = '#f59e0b';
+const NICHE_FILL = '#eff6ff';
+const NICHE_STROKE = '#3b82f6';
 
 function formatDim(n: number): string {
   return Number.isInteger(n) ? n.toString() : n.toFixed(1);
@@ -98,7 +97,7 @@ export default function WallElevation({ wall, effectiveWidth, effectiveHeight, c
           <text
             x={tx + tw / 2} y={ty + th / 2}
             textAnchor="middle" dominantBaseline="middle"
-            fontSize={Math.min(9, tw / 3, th / 2)} fill="#193137" fontWeight={600}
+            fontSize={Math.min(9, tw / 3, th / 2)} fill="#1e293b" fontWeight={600}
           >
             {label}
           </text>
@@ -109,20 +108,20 @@ export default function WallElevation({ wall, effectiveWidth, effectiveHeight, c
 
   return (
     <div>
-      <svg width={svgWidth} height={svgHeight} style={{ background: '#f0f4f4', borderRadius: 12, display: 'block' }}>
+      <svg width={svgWidth} height={svgHeight} style={{ background: '#f8fafc', borderRadius: 12, display: 'block' }}>
         <defs>
           <marker id={`arR-${wall.id}`} markerWidth="6" markerHeight="6" refX="5" refY="3" orient="auto">
-            <path d="M0,0 L6,3 L0,6" fill="#73979c" />
+            <path d="M0,0 L6,3 L0,6" fill="#64748b" />
           </marker>
           <marker id={`arL-${wall.id}`} markerWidth="6" markerHeight="6" refX="1" refY="3" orient="auto">
-            <path d="M6,0 L0,3 L6,6" fill="#73979c" />
+            <path d="M6,0 L0,3 L6,6" fill="#64748b" />
           </marker>
         </defs>
 
         {/* Wall background */}
         <rect
           x={ox} y={oy} width={wallW} height={wallH}
-          fill="#f9fafb" stroke="#193137" strokeWidth={1.5}
+          fill="#f9fafb" stroke="#1e293b" strokeWidth={1.5}
         />
 
         {/* Wall tiles */}
@@ -167,7 +166,7 @@ export default function WallElevation({ wall, effectiveWidth, effectiveHeight, c
                 {showLabel && (
                   <text x={tx + tw / 2} y={ty + th / 2}
                     textAnchor="middle" dominantBaseline="middle"
-                    fontSize={Math.min(9, tw / 3, th / 2)} fill="#193137" fontWeight={600}>
+                    fontSize={Math.min(9, tw / 3, th / 2)} fill="#1e293b" fontWeight={600}>
                     {label}
                   </text>
                 )}
@@ -197,13 +196,13 @@ export default function WallElevation({ wall, effectiveWidth, effectiveHeight, c
                   <text
                     x={gx + gw / 2} y={gy + Math.min(gh / 2, 20)}
                     textAnchor="middle" dominantBaseline="middle"
-                    fontSize={10} fill="#193137" fontWeight={700}
+                    fontSize={10} fill="#1e293b" fontWeight={700}
                   >
-                    Geberit
+                    WC modul
                   </text>
                   <text
                     x={gx + gw / 2} y={gy + Math.min(gh / 2, 20) + 13}
-                    textAnchor="middle" fontSize={9} fill="#193137"
+                    textAnchor="middle" fontSize={9} fill="#1e293b"
                   >
                     {g.width}×{g.height} cm
                   </text>
@@ -222,13 +221,13 @@ export default function WallElevation({ wall, effectiveWidth, effectiveHeight, c
           return (
             <g key={`corner-obs-${i}`}>
               <rect x={cx} y={cy} width={cw} height={ch}
-                fill="#f0f4f4" stroke="#73979c" strokeWidth={1.5}
+                fill="#f8fafc" stroke="#64748b" strokeWidth={1.5}
                 strokeDasharray="6,3" />
               {cw > 20 && ch > 20 && (
                 <text x={cx + cw / 2} y={cy + ch / 2}
                   textAnchor="middle" dominantBaseline="middle"
-                  fontSize={9} fill="#73979c" fontWeight={600}>
-                  Geberit
+                  fontSize={9} fill="#64748b" fontWeight={600}>
+                  WC modul
                 </text>
               )}
             </g>
@@ -255,13 +254,13 @@ export default function WallElevation({ wall, effectiveWidth, effectiveHeight, c
               <text
                 x={dx + dw / 2} y={dy + dh / 2 - 6}
                 textAnchor="middle" dominantBaseline="middle"
-                fontSize={11} fill="#0095b6" fontWeight={700}
+                fontSize={11} fill="#3b82f6" fontWeight={700}
               >
                 Dveře
               </text>
               <text
                 x={dx + dw / 2} y={dy + dh / 2 + 8}
-                textAnchor="middle" fontSize={9} fill="#0095b6"
+                textAnchor="middle" fontSize={9} fill="#3b82f6"
               >
                 {d.width}×{d.height} cm
               </text>
@@ -303,19 +302,19 @@ export default function WallElevation({ wall, effectiveWidth, effectiveHeight, c
         {/* Dimension: width (bottom) */}
         <line
           x1={ox} y1={oy + wallH + 14} x2={ox + wallW} y2={oy + wallH + 14}
-          stroke="#73979c" strokeWidth={1}
+          stroke="#64748b" strokeWidth={1}
           markerStart={`url(#arL-${wall.id})`} markerEnd={`url(#arR-${wall.id})`}
         />
-        <text x={ox + wallW / 2} y={oy + wallH + 27} textAnchor="middle" fontSize={11} fill="#193137" fontWeight={600}>
+        <text x={ox + wallW / 2} y={oy + wallH + 27} textAnchor="middle" fontSize={11} fill="#1e293b" fontWeight={600}>
           {formatDim(effW)} cm
         </text>
 
         {/* Dimension: height (left) */}
         <line x1={ox - 14} y1={oy} x2={ox - 14} y2={oy + wallH}
-          stroke="#73979c" strokeWidth={1}
+          stroke="#64748b" strokeWidth={1}
           markerStart={`url(#arL-${wall.id})`} markerEnd={`url(#arR-${wall.id})`}
         />
-        <text x={ox - 22} y={oy + wallH / 2} textAnchor="middle" fontSize={11} fill="#193137" fontWeight={600}
+        <text x={ox - 22} y={oy + wallH / 2} textAnchor="middle" fontSize={11} fill="#1e293b" fontWeight={600}
           transform={`rotate(-90, ${ox - 22}, ${oy + wallH / 2})`}>
           {formatDim(effH)} cm
         </text>
@@ -324,9 +323,9 @@ export default function WallElevation({ wall, effectiveWidth, effectiveHeight, c
         {layout && layout.leftCut > 0 && (
           <>
             <line x1={ox} y1={oy - 6} x2={ox + layout.leftCut * scale} y2={oy - 6}
-              stroke="#ffcc00" strokeWidth={1.5} />
+              stroke="#f59e0b" strokeWidth={1.5} />
             <text x={ox + layout.leftCut * scale / 2} y={oy - 10}
-              textAnchor="middle" fontSize={9} fill="#193137" fontWeight={600}>
+              textAnchor="middle" fontSize={9} fill="#1e293b" fontWeight={600}>
               {formatDim(layout.leftCut)}
             </text>
           </>
@@ -334,9 +333,9 @@ export default function WallElevation({ wall, effectiveWidth, effectiveHeight, c
         {layout && layout.rightCut > 0 && (
           <>
             <line x1={ox + wallW - layout.rightCut * scale} y1={oy - 6} x2={ox + wallW} y2={oy - 6}
-              stroke="#ffcc00" strokeWidth={1.5} />
+              stroke="#f59e0b" strokeWidth={1.5} />
             <text x={ox + wallW - layout.rightCut * scale / 2} y={oy - 10}
-              textAnchor="middle" fontSize={9} fill="#193137" fontWeight={600}>
+              textAnchor="middle" fontSize={9} fill="#1e293b" fontWeight={600}>
               {formatDim(layout.rightCut)}
             </text>
           </>
@@ -355,22 +354,22 @@ export default function WallElevation({ wall, effectiveWidth, effectiveHeight, c
             Řezané: <b>{layout.cutTiles}</b>
           </div>
           {layout.leftCut > 0 && (
-            <div style={{ color: '#193137' }}>
+            <div style={{ color: '#1e293b' }}>
               Okraj L/R: <b>{formatDim(layout.leftCut)} cm</b>
             </div>
           )}
           {layout.topCut > 0 && (
-            <div style={{ color: '#193137' }}>
+            <div style={{ color: '#1e293b' }}>
               Okraj nahoře/dole: <b>{formatDim(layout.topCut)} cm</b>
             </div>
           )}
-          <div style={{ color: '#73979c' }}>
+          <div style={{ color: '#64748b' }}>
             Dlaždice: <b>{wall.tileConfig?.name}</b>
           </div>
           {layout.geberitLayouts.map(gl => (
             <div key={gl.geberitId} style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
               <span style={{ display: 'inline-block', width: 14, height: 14, background: GEBERIT_TILE_FULL_FILL, border: `1px solid ${GEBERIT_TILE_FULL_STROKE}`, borderRadius: 2 }} />
-              Geberit: <b>{gl.fullTiles}</b> celé, <b>{gl.cutTiles}</b> řezané
+              WC modul: <b>{gl.fullTiles}</b> celé, <b>{gl.cutTiles}</b> řezané
             </div>
           ))}
         </div>

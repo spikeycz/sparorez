@@ -1,0 +1,145 @@
+<!DOCTYPE html>
+<html>
+<head><title>Migrate localStorage to DB</title></head>
+<body style="font-family: sans-serif; padding: 20px; max-width: 600px; margin: 0 auto;">
+<h2>Sparořez — Migrace dat</h2>
+<p>Tato stránka přečte vaše návrhy z prohlížeče a uloží je do databáze.</p>
+<div id="info" style="background: #f8fafc; padding: 12px; border-radius: 8px; margin: 16px 0;"></div>
+<button id="btn" onclick="doMigrate()" style="padding: 10px 24px; font-size: 16px; cursor: pointer; background: #3b82f6; color: white; border: none; border-radius: 20px;">
+  Importovat do DB
+</button>
+<pre id="log" style="background: #eee; padding: 12px; border-radius: 8px; margin-top: 16px; white-space: pre-wrap; font-size: 12px;"></pre>
+<script>
+const API = 'http://localhost:3001';
+const log = document.getElementById('log');
+const info = document.getElementById('info');
+
+// Find all sparorez localStorage keys
+const allKeys = Object.keys(localStorage).filter(k => k.startsWith('sparorez'));
+info.innerHTML = '<b>Nalezené klíče:</b><br>' + allKeys.map(k => {
+  const val = localStorage.getItem(k);
+  return `${k} — ${val ? val.length : 0} bytes`;
+}).join('<br>');
+
+if (allKeys.length === 0) {
+  info.innerHTML = '<b>Žádná data v localStorage nenalezena.</b>';
+}
+
+async function doMigrate() {
+  log.textContent = 'Přihlašování...\n';
+
+  // Login
+  let token;
+  try {
+    const res = await fetch(API + '/api/auth/login', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ email: 'petr@designstudio.cz', password: 'test123' }),
+    });
+    const data = await res.json();
+    if (!res.ok) throw new Error(data.error);
+    token = data.token;
+    log.textContent += 'Přihlášeno jako ' + data.user.name + '\n';
+  } catch (e) {
+    log.textContent += 'Login failed: ' + e.message + '\n';
+    return;
+  }
+
+  const headers = { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + token };
+
+  // Find best rooms data
+  const roomKeys = Object.keys(localStorage).filter(k => k.startsWith('sparorez-rooms'));
+  let bestRooms = null;
+  let bestKey = '';
+  let bestSize = 0;
+  for (const key of roomKeys) {
+    const raw = localStorage.getItem(key);
+    if (raw && raw.length > bestSize) {
+      try {
+        const parsed = JSON.parse(raw);
+        if (Array.isArray(parsed) && parsed.length > 0) {
+          bestRooms = parsed;
+          bestKey = key;
+          bestSize = raw.length;
+        }
+      } catch {}
+    }
+  }
+
+  if (!bestRooms) {
+    log.textContent += 'Žádné rooms data nenalezeny!\n';
+    return;
+  }
+
+  log.textContent += `Použiji klíč: ${bestKey} (${bestSize} bytes, ${bestRooms.length} rooms)\n`;
+  bestRooms.forEach(r => {
+    log.textContent += `  ${r.name}: ${r.walls?.map(w =>
+      `${w.label}(tiles:${!!w.tileConfig}, geb:${w.geberits?.length||0}, doors:${w.doors?.length||0})`
+    ).join(', ')}\n`;
+  });
+
+  // Get or create project
+  let projectId;
+  try {
+    const res = await fetch(API + '/api/projects', { headers });
+    const projects = await res.json();
+    if (projects.length > 0) {
+      projectId = projects[0].id;
+      log.textContent += `Použiji existující projekt: ${projects[0].name}\n`;
+    } else {
+      const res2 = await fetch(API + '/api/projects', {
+        method: 'POST', headers,
+        body: JSON.stringify({ name: 'Rekonstrukce bytu' }),
+      });
+      const proj = await res2.json();
+      projectId = proj.id;
+      log.textContent += `Vytvořen projekt: ${proj.name}\n`;
+    }
+  } catch (e) {
+    log.textContent += 'Projects error: ' + e.message + '\n';
+    return;
+  }
+
+  // Save rooms
+  try {
+    const res = await fetch(API + `/api/projects/${projectId}/rooms`, {
+      method: 'PUT', headers,
+      body: JSON.stringify(bestRooms),
+    });
+    if (!res.ok) throw new Error('HTTP ' + res.status);
+    log.textContent += `Rooms uloženy! (${bestRooms.length} místností)\n`;
+  } catch (e) {
+    log.textContent += 'Rooms save error: ' + e.message + '\n';
+    return;
+  }
+
+  // Save purchased
+  const purchasedKeys = Object.keys(localStorage).filter(k => k.startsWith('sparorez-purchased'));
+  let bestPurchased = {};
+  let bestPSize = 0;
+  for (const key of purchasedKeys) {
+    const raw = localStorage.getItem(key);
+    if (raw && raw.length > bestPSize) {
+      try {
+        const parsed = JSON.parse(raw);
+        if (typeof parsed === 'object') { bestPurchased = parsed; bestPSize = raw.length; }
+      } catch {}
+    }
+  }
+  if (Object.keys(bestPurchased).length > 0) {
+    try {
+      await fetch(API + `/api/projects/${projectId}/purchased`, {
+        method: 'PUT', headers,
+        body: JSON.stringify(bestPurchased),
+      });
+      log.textContent += `Purchased tiles uloženy!\n`;
+    } catch {}
+  }
+
+  log.textContent += '\n✅ Hotovo! Otevřete aplikaci a přihlaste se.\n';
+  document.getElementById('btn').disabled = true;
+  document.getElementById('btn').textContent = 'Hotovo!';
+}
+</script>
+</body>
+</html>

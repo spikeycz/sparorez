@@ -77,6 +77,8 @@ export interface Room {
   showerCabins: ShowerCabin[];
   // Tile + adhesive thickness in cm (affects adjacent wall/floor dimensions)
   tileThickness: number; // default 1.5
+  // Room-level tile palette — define tiles once, pick from them on each surface
+  tilePalette?: TileConfig[];
 }
 
 export interface TileCalculation {

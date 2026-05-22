@@ -183,7 +183,7 @@ function buildTileUsage(rooms: Room[]): TileUsage[] {
         const gUsage = getOrCreate(gtc.name, gtc.color, gtc.width, gtc.height);
         gUsage.surfaces.push({
           roomName: room.name,
-          surfaceName: `Geberit (stěna ${wall.label})`,
+          surfaceName: `WC modul (stěna ${wall.label})`,
           areaSqm: gAreaSqm, simpleCount: gSimple, layoutCount: gLayoutCount,
           fullTiles: gFull, cutTiles: gCut, reuseSavings: gReuse,
         });

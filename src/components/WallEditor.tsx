@@ -18,13 +18,14 @@ interface Props {
   effectiveWidth?: number;
   effectiveHeight?: number;
   cornerObstacles?: CornerObstacle[];
+  tilePalette?: import('../types').TileConfig[];
 }
 
 const SIDE_LABELS: Record<string, string> = {
   top: 'horní', right: 'pravá', bottom: 'dolní', left: 'levá',
 };
 
-export default function WallEditor({ wall, onUpdate, effectiveWidth, effectiveHeight, cornerObstacles }: Props) {
+export default function WallEditor({ wall, onUpdate, effectiveWidth, effectiveHeight, cornerObstacles, tilePalette }: Props) {
   const [editingGeberit, setEditingGeberit] = useState<string | null>(null);
   const [editingNiche, setEditingNiche] = useState<string | null>(null);
   const [editingDoor, setEditingDoor] = useState<string | null>(null);
@@ -111,15 +112,16 @@ export default function WallEditor({ wall, onUpdate, effectiveWidth, effectiveHe
           label="Dlaždice na stěnu"
           current={wall.tileConfig}
           onChange={config => onUpdate({ ...wall, tileConfig: config })}
+          palette={tilePalette}
         />
       </Box>
 
       {/* Geberits */}
       <Box sx={{ mt: 2, pt: 2, borderTop: 1, borderColor: 'divider' }}>
         <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', mb: 1 }}>
-          <Typography variant="subtitle1" sx={{ fontWeight: 600 }}>Geberit / předstěny</Typography>
+          <Typography variant="subtitle1" sx={{ fontWeight: 600 }}>WC moduly</Typography>
           <Button size="small" variant="outlined" color="secondary" startIcon={<AddIcon />} onClick={addGeberit}>
-            Přidat Geberit
+            Přidat WC modul
           </Button>
         </Box>
 
@@ -133,7 +135,7 @@ export default function WallEditor({ wall, onUpdate, effectiveWidth, effectiveHe
             }}
           >
             <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 0.5 }}>
-              <Chip label="Geberit" size="small" color="secondary" variant="outlined" />
+              <Chip label="WC modul" size="small" color="secondary" variant="outlined" />
               <Box>
                 <IconButton size="small" onClick={() => setEditingGeberit(editingGeberit === g.id ? null : g.id)}>
                   {editingGeberit === g.id ? <CloseIcon fontSize="small" /> : <EditIcon fontSize="small" />}
@@ -160,9 +162,10 @@ export default function WallEditor({ wall, onUpdate, effectiveWidth, effectiveHe
                   sx={{ width: 100 }} />
               </Stack>
               <TileSelector
-                label="Dlaždice na Geberit"
+                label="Dlaždice na WC modul"
                 current={g.tileConfig}
                 onChange={config => updateGeberit(g.id, { tileConfig: config })}
+                palette={tilePalette}
               />
             </Collapse>
 
@@ -177,7 +180,7 @@ export default function WallEditor({ wall, onUpdate, effectiveWidth, effectiveHe
 
         {wall.geberits.length === 0 && (
           <Typography variant="caption" color="text.secondary" sx={{ fontStyle: 'italic' }}>
-            Žádné geberity na této stěně
+            Žádné WC moduly na této stěně
           </Typography>
         )}
       </Box>
@@ -234,6 +237,7 @@ export default function WallEditor({ wall, onUpdate, effectiveWidth, effectiveHe
                 label="Dlaždice výklenku"
                 current={n.tileConfig}
                 onChange={config => updateNiche(n.id, { tileConfig: config })}
+                palette={tilePalette}
               />
             </Collapse>
 

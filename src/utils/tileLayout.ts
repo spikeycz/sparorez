@@ -106,6 +106,12 @@ export interface LayoutResult {
 function calcAxis(wallSize: number, tileSize: number): { positions: number[]; sizes: number[] } {
   if (tileSize <= 0 || wallSize <= 0) return { positions: [], sizes: [] };
 
+  // Single-piece rule: if the surface fits within one tile, use one piece
+  // instead of splitting into two halves. E.g. 55cm with 60cm tile → one 55cm cut piece.
+  if (wallSize <= tileSize) {
+    return { positions: [0], sizes: [Math.round(wallSize * 100) / 100] };
+  }
+
   const fullCount = Math.floor(wallSize / tileSize);
   let remainder = wallSize - fullCount * tileSize;
 
@@ -128,7 +134,8 @@ function calcAxis(wallSize: number, tileSize: number): { positions: number[]; si
   // Quartering: if edge cut < half tile, remove one full tile and redistribute.
   // Avoids tiny edge strips by creating larger, more practical cuts.
   // e.g. 75cm with 60cm tiles → 37.5 | 37.5 instead of 7.5 | 60 | 7.5
-  if (edgeCut < tileSize / 2 && fullCount >= 1) {
+  // But don't quarter down to 0 full tiles — that's handled by single-piece rule above.
+  if (edgeCut < tileSize / 2 && fullCount >= 2) {
     remainder = wallSize - (fullCount - 1) * tileSize;
     edgeCut = remainder / 2;
   }
@@ -493,7 +500,7 @@ export function calculateFloorLayout(
         fx = 0; fy = floorD - g.offsetFromLeft - g.width; fw = g.depth; fh = g.width;
       }
 
-      floorObstacles.push({ x: fx, y: fy, w: fw, h: fh, label: 'Geberit' });
+      floorObstacles.push({ x: fx, y: fy, w: fw, h: fh, label: 'Předstěna' });
       // Only add as tile obstacle if it overlaps the tiling area
       if (fx + fw > tileStartX + 0.1 && fx < tileEndX - 0.1 &&
           fy + fh > tileStartY + 0.1 && fy < tileEndY - 0.1) {

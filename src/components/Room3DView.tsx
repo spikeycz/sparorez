@@ -1,12 +1,13 @@
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useRef, useState, useCallback } from 'react';
 import * as THREE from 'three';
 import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
-import { Box, Typography, IconButton, Paper, Tooltip } from '@mui/material';
+import { Box, Typography, IconButton, Paper, Tooltip, Chip, Divider } from '@mui/material';
 import CloseIcon from '@mui/icons-material/Close';
 import VisibilityIcon from '@mui/icons-material/Visibility';
 import VisibilityOffIcon from '@mui/icons-material/VisibilityOff';
 import CameraIcon from '@mui/icons-material/CameraAlt';
-import type { Room, Wall } from '../types';
+import { Button } from '@mui/material';
+import type { Room, Wall, TileConfig } from '../types';
 import { createTileCanvasFromLayout, createTileCanvas, loadImage } from '../utils/tileTexture';
 import { calculateTileLayout, calculateFloorLayout, getCornerGeberitObstacles } from '../utils/tileLayout';
 import { getEffectiveDimensions } from '../utils/effectiveDimensions';
@@ -50,8 +51,53 @@ async function makeFloorTexture(room: Room): Promise<THREE.CanvasTexture> {
   return makeTexture(createTileCanvas(room.floorTileConfig, effW, effD, decorImg));
 }
 
-async function buildScene(room: Room, showCeiling: boolean): Promise<THREE.Scene> {
+function createConcreteTexture(): THREE.CanvasTexture {
+  const size = 512;
+  const canvas = document.createElement('canvas');
+  canvas.width = size;
+  canvas.height = size;
+  const ctx = canvas.getContext('2d')!;
+  ctx.fillStyle = '#c8c4be';
+  ctx.fillRect(0, 0, size, size);
+  for (let i = 0; i < 40000; i++) {
+    const x = Math.random() * size;
+    const y = Math.random() * size;
+    const gray = 160 + Math.random() * 50;
+    const alpha = 0.05 + Math.random() * 0.12;
+    ctx.fillStyle = `rgba(${gray},${gray - 5},${gray - 10},${alpha})`;
+    ctx.fillRect(x, y, 1 + Math.random() * 2, 1 + Math.random() * 2);
+  }
+  for (let i = 0; i < 30; i++) {
+    const x = Math.random() * size;
+    const y = Math.random() * size;
+    const r = 10 + Math.random() * 30;
+    const gray = 170 + Math.random() * 40;
+    ctx.fillStyle = `rgba(${gray},${gray - 3},${gray - 8},0.08)`;
+    ctx.beginPath();
+    ctx.arc(x, y, r, 0, Math.PI * 2);
+    ctx.fill();
+  }
+  const tex = new THREE.CanvasTexture(canvas);
+  tex.wrapS = tex.wrapT = THREE.RepeatWrapping;
+  tex.repeat.set(4, 4);
+  tex.colorSpace = THREE.SRGBColorSpace;
+  return tex;
+}
+
+interface WallMeshInfo {
+  group: THREE.Group;
+  wallId: string;
+  side: 'top' | 'right' | 'bottom' | 'left';
+}
+
+interface SceneResult {
+  scene: THREE.Scene;
+  wallMeshes: WallMeshInfo[];
+}
+
+async function buildScene(room: Room, showCeiling: boolean): Promise<SceneResult> {
   const scene = new THREE.Scene();
+  const wallMeshes: WallMeshInfo[] = [];
   const rW = room.width * CM;
   const rD = room.depth * CM;
   const hM = room.height * CM;
@@ -59,9 +105,8 @@ async function buildScene(room: Room, showCeiling: boolean): Promise<THREE.Scene
   // Lights — warm bathroom mood
   scene.add(new THREE.AmbientLight(0xfff8f0, 0.25));
 
-  // 2 recessed ceiling spotlights from wall C to A, spaced at 1/3 and 2/3 of depth
   for (const frac of [1 / 3, 2 / 3]) {
-    const z = rD / 2 - frac * rD; // C is +z, A is -z
+    const z = rD / 2 - frac * rD;
     const spot = new THREE.SpotLight(0xffe8cc, 2.5, hM * 2.5, Math.PI / 4, 0.6, 1.2);
     spot.position.set(0, hM - 0.01, z);
     spot.target.position.set(0, 0, z);
@@ -69,13 +114,13 @@ async function buildScene(room: Room, showCeiling: boolean): Promise<THREE.Scene
     scene.add(spot.target);
   }
 
-  // Gentle fill to keep walls visible
   const fill = new THREE.HemisphereLight(0xffffff, 0xe0d8d0, 0.35);
   scene.add(fill);
 
-  // Ground
+  // Ground — concrete texture
   const groundGeo = new THREE.PlaneGeometry(10, 10);
-  const groundMat = new THREE.MeshStandardMaterial({ color: 0xd8dce0 });
+  const concreteTex = createConcreteTexture();
+  const groundMat = new THREE.MeshStandardMaterial({ map: concreteTex, roughness: 0.9 });
   const ground = new THREE.Mesh(groundGeo, groundMat);
   ground.rotation.x = -Math.PI / 2;
   ground.position.y = -0.005;
@@ -129,7 +174,6 @@ async function buildScene(room: Room, showCeiling: boolean): Promise<THREE.Scene
       shape.holes.push(hole);
     }
 
-    // Niche openings — cut holes in the wall just like doors
     for (const n of wall.niches ?? []) {
       const nx = n.offsetFromLeft * CM;
       const ny = n.offsetFromBottom * CM;
@@ -145,7 +189,6 @@ async function buildScene(room: Room, showCeiling: boolean): Promise<THREE.Scene
     }
 
     const geo = new THREE.ShapeGeometry(shape);
-    // UVs
     const pos = geo.attributes.position;
     const uvs = new Float32Array(pos.count * 2);
     for (let i = 0; i < pos.count; i++) {
@@ -154,11 +197,9 @@ async function buildScene(room: Room, showCeiling: boolean): Promise<THREE.Scene
     }
     geo.setAttribute('uv', new THREE.BufferAttribute(uvs, 2));
 
-    // Interior face: tile/decor texture
     const matInner = new THREE.MeshStandardMaterial({ map: tex, side: THREE.FrontSide });
     const meshInner = new THREE.Mesh(geo, matInner);
 
-    // Exterior face: light grey
     const geoOuter = geo.clone();
     const matOuter = new THREE.MeshStandardMaterial({ color: 0xd8dce0, side: THREE.BackSide });
     const meshOuter = new THREE.Mesh(geoOuter, matOuter);
@@ -166,27 +207,27 @@ async function buildScene(room: Room, showCeiling: boolean): Promise<THREE.Scene
     const group = new THREE.Group();
     group.add(meshInner);
     group.add(meshOuter);
-    const mesh = group;
 
     switch (wall.side) {
       case 'top':
-        mesh.position.set(-rW / 2, 0, -rD / 2);
+        group.position.set(-rW / 2, 0, -rD / 2);
         break;
       case 'right':
-        mesh.position.set(rW / 2, 0, -rD / 2);
-        mesh.rotation.y = -Math.PI / 2;
+        group.position.set(rW / 2, 0, -rD / 2);
+        group.rotation.y = -Math.PI / 2;
         break;
       case 'bottom':
-        mesh.position.set(rW / 2, 0, rD / 2);
-        mesh.rotation.y = Math.PI;
+        group.position.set(rW / 2, 0, rD / 2);
+        group.rotation.y = Math.PI;
         break;
       case 'left':
-        mesh.position.set(-rW / 2, 0, rD / 2);
-        mesh.rotation.y = Math.PI / 2;
+        group.position.set(-rW / 2, 0, rD / 2);
+        group.rotation.y = Math.PI / 2;
         break;
     }
 
-    scene.add(mesh);
+    scene.add(group);
+    wallMeshes.push({ group, wallId: wall.id, side: wall.side });
   }
 
   // Geberits
@@ -226,26 +267,25 @@ async function buildScene(room: Room, showCeiling: boolean): Promise<THREE.Scene
       const sideTex = makeTexture(createTileCanvas(tc, g.depth, g.height, gDecorImg));
       const topTex = makeTexture(createTileCanvas(tc, g.width, g.depth, gDecorImg));
 
-      // BoxGeometry material order: +x, -x, +y, -y, +z, -z
       const geo = new THREE.BoxGeometry(...boxArgs);
       let mats: THREE.MeshStandardMaterial[];
       if (wall.side === 'top' || wall.side === 'bottom') {
         mats = [
-          new THREE.MeshStandardMaterial({ map: sideTex, side: THREE.DoubleSide }), // +x
-          new THREE.MeshStandardMaterial({ map: sideTex, side: THREE.DoubleSide }), // -x
-          new THREE.MeshStandardMaterial({ map: topTex, side: THREE.DoubleSide }),  // +y
-          new THREE.MeshStandardMaterial({ map: topTex, side: THREE.DoubleSide }),  // -y
-          new THREE.MeshStandardMaterial({ map: faceTex, side: THREE.DoubleSide }), // +z (front)
-          new THREE.MeshStandardMaterial({ map: faceTex, side: THREE.DoubleSide }), // -z (back)
+          new THREE.MeshStandardMaterial({ map: sideTex, side: THREE.DoubleSide }),
+          new THREE.MeshStandardMaterial({ map: sideTex, side: THREE.DoubleSide }),
+          new THREE.MeshStandardMaterial({ map: topTex, side: THREE.DoubleSide }),
+          new THREE.MeshStandardMaterial({ map: topTex, side: THREE.DoubleSide }),
+          new THREE.MeshStandardMaterial({ map: faceTex, side: THREE.DoubleSide }),
+          new THREE.MeshStandardMaterial({ map: faceTex, side: THREE.DoubleSide }),
         ];
       } else {
         mats = [
-          new THREE.MeshStandardMaterial({ map: faceTex, side: THREE.DoubleSide }), // +x (front)
-          new THREE.MeshStandardMaterial({ map: faceTex, side: THREE.DoubleSide }), // -x (back)
-          new THREE.MeshStandardMaterial({ map: topTex, side: THREE.DoubleSide }),  // +y
-          new THREE.MeshStandardMaterial({ map: topTex, side: THREE.DoubleSide }),  // -y
-          new THREE.MeshStandardMaterial({ map: sideTex, side: THREE.DoubleSide }), // +z
-          new THREE.MeshStandardMaterial({ map: sideTex, side: THREE.DoubleSide }), // -z
+          new THREE.MeshStandardMaterial({ map: faceTex, side: THREE.DoubleSide }),
+          new THREE.MeshStandardMaterial({ map: faceTex, side: THREE.DoubleSide }),
+          new THREE.MeshStandardMaterial({ map: topTex, side: THREE.DoubleSide }),
+          new THREE.MeshStandardMaterial({ map: topTex, side: THREE.DoubleSide }),
+          new THREE.MeshStandardMaterial({ map: sideTex, side: THREE.DoubleSide }),
+          new THREE.MeshStandardMaterial({ map: sideTex, side: THREE.DoubleSide }),
         ];
       }
       const mesh = new THREE.Mesh(geo, mats);
@@ -254,7 +294,7 @@ async function buildScene(room: Room, showCeiling: boolean): Promise<THREE.Scene
     }
   }
 
-  // Niches — box-shaped indentations going into the wall
+  // Niches
   for (const wall of room.walls) {
     for (const n of wall.niches ?? []) {
       const nW = n.width * CM;
@@ -292,20 +332,39 @@ async function buildScene(room: Room, showCeiling: boolean): Promise<THREE.Scene
       const sideTex = makeTexture(createTileCanvas(tc, n.depth, n.height, nDecorImg));
       const topTex = makeTexture(createTileCanvas(tc, n.width, n.depth, nDecorImg));
 
+      const invisible = new THREE.MeshStandardMaterial({ visible: false });
       const geo = new THREE.BoxGeometry(...boxArgs);
-      let mats: THREE.MeshStandardMaterial[];
-      if (wall.side === 'top' || wall.side === 'bottom') {
+      let mats: THREE.Material[];
+      if (wall.side === 'top') {
+        mats = [
+          new THREE.MeshStandardMaterial({ map: sideTex, side: THREE.DoubleSide }),
+          new THREE.MeshStandardMaterial({ map: sideTex, side: THREE.DoubleSide }),
+          new THREE.MeshStandardMaterial({ map: topTex, side: THREE.DoubleSide }),
+          new THREE.MeshStandardMaterial({ map: topTex, side: THREE.DoubleSide }),
+          invisible,
+          new THREE.MeshStandardMaterial({ map: backTex, side: THREE.DoubleSide }),
+        ];
+      } else if (wall.side === 'bottom') {
         mats = [
           new THREE.MeshStandardMaterial({ map: sideTex, side: THREE.DoubleSide }),
           new THREE.MeshStandardMaterial({ map: sideTex, side: THREE.DoubleSide }),
           new THREE.MeshStandardMaterial({ map: topTex, side: THREE.DoubleSide }),
           new THREE.MeshStandardMaterial({ map: topTex, side: THREE.DoubleSide }),
           new THREE.MeshStandardMaterial({ map: backTex, side: THREE.DoubleSide }),
+          invisible,
+        ];
+      } else if (wall.side === 'right') {
+        mats = [
           new THREE.MeshStandardMaterial({ map: backTex, side: THREE.DoubleSide }),
+          invisible,
+          new THREE.MeshStandardMaterial({ map: topTex, side: THREE.DoubleSide }),
+          new THREE.MeshStandardMaterial({ map: topTex, side: THREE.DoubleSide }),
+          new THREE.MeshStandardMaterial({ map: sideTex, side: THREE.DoubleSide }),
+          new THREE.MeshStandardMaterial({ map: sideTex, side: THREE.DoubleSide }),
         ];
       } else {
         mats = [
-          new THREE.MeshStandardMaterial({ map: backTex, side: THREE.DoubleSide }),
+          invisible,
           new THREE.MeshStandardMaterial({ map: backTex, side: THREE.DoubleSide }),
           new THREE.MeshStandardMaterial({ map: topTex, side: THREE.DoubleSide }),
           new THREE.MeshStandardMaterial({ map: topTex, side: THREE.DoubleSide }),
@@ -319,7 +378,7 @@ async function buildScene(room: Room, showCeiling: boolean): Promise<THREE.Scene
     }
   }
 
-  // Showers — draw just an outline stroke on the floor
+  // Showers
   for (const s of room.showerCabins) {
     const sW = s.width * CM;
     const sD = s.depth * CM;
@@ -330,7 +389,6 @@ async function buildScene(room: Room, showCeiling: boolean): Promise<THREE.Scene
       case 'bottom-left':  x = -rW / 2 + sW / 2; z =  rD / 2 - sD / 2; break;
       case 'bottom-right': x =  rW / 2 - sW / 2; z =  rD / 2 - sD / 2; break;
     }
-    // Outline rectangle
     const points = [
       new THREE.Vector3(-sW / 2, 0, -sD / 2),
       new THREE.Vector3( sW / 2, 0, -sD / 2),
@@ -345,16 +403,76 @@ async function buildScene(room: Room, showCeiling: boolean): Promise<THREE.Scene
     scene.add(line);
   }
 
-  return scene;
+  // Wall labels on the floor outside each wall
+  for (const wall of room.walls) {
+    const labelCanvas = document.createElement('canvas');
+    labelCanvas.width = 128;
+    labelCanvas.height = 128;
+    const lctx = labelCanvas.getContext('2d')!;
+    lctx.fillStyle = 'rgba(0,0,0,0)';
+    lctx.fillRect(0, 0, 128, 128);
+    lctx.fillStyle = '#555';
+    lctx.font = 'bold 80px sans-serif';
+    lctx.textAlign = 'center';
+    lctx.textBaseline = 'middle';
+    lctx.fillText(wall.label, 64, 64);
+
+    const labelTex = new THREE.CanvasTexture(labelCanvas);
+    labelTex.colorSpace = THREE.SRGBColorSpace;
+    const labelMat = new THREE.MeshBasicMaterial({ map: labelTex, transparent: true, depthWrite: false });
+    const labelGeo = new THREE.PlaneGeometry(0.3, 0.3);
+    const labelMesh = new THREE.Mesh(labelGeo, labelMat);
+    labelMesh.rotation.x = -Math.PI / 2;
+    labelMesh.position.y = 0.001;
+
+    const offset = 0.35; // distance from wall on the floor
+    switch (wall.side) {
+      case 'top':    labelMesh.position.set(0, 0.001, -rD / 2 - offset); break;
+      case 'bottom': labelMesh.position.set(0, 0.001, rD / 2 + offset); break;
+      case 'right':  labelMesh.position.set(rW / 2 + offset, 0.001, 0); break;
+      case 'left':   labelMesh.position.set(-rW / 2 - offset, 0.001, 0); break;
+    }
+    scene.add(labelMesh);
+  }
+
+  return { scene, wallMeshes };
 }
 
-export default function Room3DView({ room, onClose }: { room: Room; onClose: () => void }) {
+interface Room3DProps {
+  room: Room;
+  onClose: () => void;
+  tilePalette?: TileConfig[];
+  onUpdate?: (room: Room) => void;
+}
+
+export default function Room3DView({ room, onClose, tilePalette, onUpdate }: Room3DProps) {
   const containerRef = useRef<HTMLDivElement>(null);
   const rendererRef = useRef<THREE.WebGLRenderer | null>(null);
   const controlsRef = useRef<OrbitControls | null>(null);
   const [showCeiling, setShowCeiling] = useState(false);
   const [fisheye, setFisheye] = useState(false);
+  const [autoHideWalls, setAutoHideWalls] = useState(true);
+  const [manualHidden, setManualHidden] = useState<Set<string>>(new Set());
   const cameraRef = useRef<THREE.PerspectiveCamera | null>(null);
+  const wallMeshesRef = useRef<WallMeshInfo[]>([]);
+  const manualHiddenRef = useRef(manualHidden);
+  manualHiddenRef.current = manualHidden;
+  const autoHideRef = useRef(autoHideWalls);
+  autoHideRef.current = autoHideWalls;
+
+  const [selectedSurface, setSelectedSurface] = useState<string | null>(null);
+
+  const assignTile = useCallback((tile: TileConfig) => {
+    if (!onUpdate || !selectedSurface) return;
+    if (selectedSurface === 'floor') {
+      onUpdate({ ...room, floorTileConfig: tile });
+    } else {
+      onUpdate({
+        ...room,
+        walls: room.walls.map(w => w.id === selectedSurface ? { ...w, tileConfig: tile } : w),
+      });
+    }
+  }, [onUpdate, selectedSurface, room]);
 
   // Update FOV and position when fisheye toggles
   useEffect(() => {
@@ -388,7 +506,6 @@ export default function Room3DView({ room, onClose }: { room: Room; onClose: () 
     const w = container.clientWidth;
     const h = container.clientHeight;
 
-    // Renderer
     const renderer = new THREE.WebGLRenderer({ antialias: true });
     renderer.setSize(w, h);
     renderer.setPixelRatio(window.devicePixelRatio);
@@ -398,7 +515,6 @@ export default function Room3DView({ room, onClose }: { room: Room; onClose: () 
     container.appendChild(renderer.domElement);
     rendererRef.current = renderer;
 
-    // Camera
     const rW = room.width * CM;
     const rD = room.depth * CM;
     const hM = room.height * CM;
@@ -414,7 +530,6 @@ export default function Room3DView({ room, onClose }: { room: Room; onClose: () 
     camera.lookAt(0, hM * 0.35, 0);
     cameraRef.current = camera;
 
-    // Controls
     const controls = new OrbitControls(camera, renderer.domElement);
     controls.target.set(0, hM * 0.35, 0);
     controls.maxPolarAngle = Math.PI * 0.85;
@@ -423,23 +538,42 @@ export default function Room3DView({ room, onClose }: { room: Room; onClose: () 
     controls.update();
     controlsRef.current = controls;
 
-    // Scene
     let animId: number;
     let cancelled = false;
 
-    buildScene(room, showCeiling).then((scene) => {
+    buildScene(room, showCeiling).then(({ scene, wallMeshes }) => {
       if (cancelled) return;
+      wallMeshesRef.current = wallMeshes;
 
-      // Animate
       function animate() {
         animId = requestAnimationFrame(animate);
         controls.update();
+
+        // Auto-hide walls based on camera position
+        for (const wm of wallMeshes) {
+          if (manualHiddenRef.current.has(wm.wallId)) {
+            wm.group.visible = false;
+            continue;
+          }
+          if (!autoHideRef.current) {
+            wm.group.visible = true;
+            continue;
+          }
+          // Hide wall if camera is on exterior side
+          const cp = camera.position;
+          switch (wm.side) {
+            case 'top':    wm.group.visible = cp.z >= -rD / 2; break;
+            case 'bottom': wm.group.visible = cp.z <= rD / 2; break;
+            case 'right':  wm.group.visible = cp.x <= rW / 2; break;
+            case 'left':   wm.group.visible = cp.x >= -rW / 2; break;
+          }
+        }
+
         renderer.render(scene, camera);
       }
       animate();
     });
 
-    // Resize
     const onResize = () => {
       const w2 = container.clientWidth;
       const h2 = container.clientHeight;
@@ -463,39 +597,158 @@ export default function Room3DView({ room, onClose }: { room: Room; onClose: () 
     };
   }, [room, showCeiling, fisheye]);
 
+  const palette = tilePalette ?? [];
+
   return (
-    <Box sx={{ position: 'relative', width: '100%', height: 'calc(100vh - 120px)', minHeight: 400 }}>
-      <Paper elevation={3} sx={{ position: 'absolute', top: 12, left: 12, zIndex: 10, display: 'flex', alignItems: 'center', gap: 1, px: 1.5, py: 0.5 }}>
-        <Typography variant="subtitle2" fontWeight={700}>3D: {room.name}</Typography>
-        <Typography variant="caption" color="text.secondary">{room.width}x{room.depth}x{room.height} cm</Typography>
-      </Paper>
+    <Box sx={{ position: 'relative', width: '100%', flex: 1, minHeight: 0, display: 'flex' }}>
+      {/* 3D Canvas */}
+      <Box sx={{ flex: 1, position: 'relative' }}>
+        <Paper elevation={3} sx={{ position: 'absolute', top: 12, left: 12, zIndex: 10, display: 'flex', alignItems: 'center', gap: 1, px: 1.5, py: 0.5 }}>
+          <Typography variant="subtitle2" fontWeight={700}>3D: {room.name}</Typography>
+          <Typography variant="caption" color="text.secondary">{room.width}x{room.depth}x{room.height} cm</Typography>
+        </Paper>
 
-      <Paper elevation={3} sx={{ position: 'absolute', top: 12, right: 12, zIndex: 10, display: 'flex', alignItems: 'center', gap: 0.5, px: 0.5, py: 0.25 }}>
-        <Tooltip title={fisheye ? 'Normální pohled' : 'Fisheye (širokoúhlý)'}>
-          <IconButton size="small" onClick={() => setFisheye(!fisheye)} color={fisheye ? 'primary' : 'default'}>
-            <CameraIcon fontSize="small" />
-          </IconButton>
-        </Tooltip>
-        <Tooltip title={showCeiling ? 'Skryt strop' : 'Zobrazit strop'}>
-          <IconButton size="small" onClick={() => setShowCeiling(!showCeiling)}>
-            {showCeiling ? <VisibilityOffIcon fontSize="small" /> : <VisibilityIcon fontSize="small" />}
-          </IconButton>
-        </Tooltip>
-        <Tooltip title="Zavrit 3D">
-          <IconButton size="small" onClick={onClose}>
-            <CloseIcon fontSize="small" />
-          </IconButton>
-        </Tooltip>
-      </Paper>
+        <Paper elevation={3} sx={{ position: 'absolute', top: 12, right: 12, zIndex: 10, display: 'flex', alignItems: 'center', gap: 0.5, px: 0.5, py: 0.25 }}>
+          <Tooltip title={autoHideWalls ? 'Vypnout auto-skrývání stěn' : 'Zapnout auto-skrývání stěn'}>
+            <IconButton size="small" onClick={() => setAutoHideWalls(!autoHideWalls)} color={autoHideWalls ? 'primary' : 'default'}>
+              {autoHideWalls ? <VisibilityIcon fontSize="small" /> : <VisibilityOffIcon fontSize="small" />}
+            </IconButton>
+          </Tooltip>
+          <Tooltip title={fisheye ? 'Normální pohled' : 'Fisheye (širokoúhlý)'}>
+            <IconButton size="small" onClick={() => setFisheye(!fisheye)} color={fisheye ? 'primary' : 'default'}>
+              <CameraIcon fontSize="small" />
+            </IconButton>
+          </Tooltip>
+          <Tooltip title={showCeiling ? 'Skryt strop' : 'Zobrazit strop'}>
+            <IconButton size="small" onClick={() => setShowCeiling(!showCeiling)}>
+              {showCeiling ? <VisibilityOffIcon fontSize="small" /> : <VisibilityIcon fontSize="small" />}
+            </IconButton>
+          </Tooltip>
+          <Tooltip title="Zavřít 3D">
+            <IconButton size="small" onClick={onClose}>
+              <CloseIcon fontSize="small" />
+            </IconButton>
+          </Tooltip>
+        </Paper>
 
-      <div
-        ref={containerRef}
-        style={{ width: '100%', height: '100%', borderRadius: 8, overflow: 'hidden' }}
-      />
+        <div
+          ref={containerRef}
+          style={{ width: '100%', height: '100%', borderRadius: 8, overflow: 'hidden' }}
+        />
 
-      <Typography variant="caption" color="text.secondary" sx={{ position: 'absolute', bottom: 8, left: 12 }}>
-        Tahejte mysi pro otaceni, koleckem priblizujte
-      </Typography>
+        <Paper elevation={3} sx={{ position: 'absolute', bottom: 12, left: 12, zIndex: 10, display: 'flex', alignItems: 'center', gap: 0.5, px: 1, py: 0.5 }}>
+          <Typography variant="caption" color="text.secondary" sx={{ mr: 0.5 }}>Stěny:</Typography>
+          {room.walls.map(w => {
+            const hidden = manualHidden.has(w.id);
+            return (
+              <Button
+                key={w.id}
+                size="small"
+                variant={hidden ? 'outlined' : 'contained'}
+                color={hidden ? 'inherit' : 'primary'}
+                onClick={() => {
+                  const next = new Set(manualHidden);
+                  if (hidden) next.delete(w.id); else next.add(w.id);
+                  setManualHidden(next);
+                }}
+                sx={{ minWidth: 0, px: 1, py: 0.25, fontSize: 12, textTransform: 'none', opacity: hidden ? 0.5 : 1 }}
+              >
+                {w.label}
+              </Button>
+            );
+          })}
+        </Paper>
+      </Box>
+
+      {/* Tile picker panel */}
+      {palette.length > 0 && onUpdate && (
+        <Paper
+          elevation={3}
+          sx={{
+            width: 200, flexShrink: 0, p: 1.5, overflowY: 'auto',
+            borderRadius: '0 8px 8px 0', bgcolor: 'background.paper',
+          }}
+        >
+          <Typography variant="subtitle2" fontWeight={700} sx={{ mb: 1 }}>Dlaždice</Typography>
+
+          {/* Surface selector */}
+          <Typography variant="caption" color="text.secondary">Vyberte plochu:</Typography>
+          <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 0.5, mt: 0.5, mb: 1.5 }}>
+            {room.walls.map(w => (
+              <Chip
+                key={w.id}
+                label={`Stěna ${w.label}`}
+                size="small"
+                variant={selectedSurface === w.id ? 'filled' : 'outlined'}
+                color={selectedSurface === w.id ? 'primary' : 'default'}
+                onClick={() => setSelectedSurface(selectedSurface === w.id ? null : w.id)}
+                sx={{ fontSize: 11 }}
+              />
+            ))}
+            <Chip
+              label="Podlaha"
+              size="small"
+              variant={selectedSurface === 'floor' ? 'filled' : 'outlined'}
+              color={selectedSurface === 'floor' ? 'primary' : 'default'}
+              onClick={() => setSelectedSurface(selectedSurface === 'floor' ? null : 'floor')}
+              sx={{ fontSize: 11 }}
+            />
+          </Box>
+
+          {selectedSurface && (
+            <>
+              <Divider sx={{ mb: 1 }} />
+              <Typography variant="caption" color="text.secondary">
+                Klikněte na dlaždici:
+              </Typography>
+              <Box sx={{ display: 'flex', flexDirection: 'column', gap: 0.75, mt: 0.75 }}>
+                {palette.map((tile, idx) => {
+                  const currentTile = selectedSurface === 'floor'
+                    ? room.floorTileConfig
+                    : room.walls.find(w => w.id === selectedSurface)?.tileConfig;
+                  const isActive = currentTile?.name === tile.name && currentTile?.color === tile.color;
+                  return (
+                    <Paper
+                      key={idx}
+                      variant="outlined"
+                      onClick={() => assignTile(tile)}
+                      sx={{
+                        p: 0.75, cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 1,
+                        borderColor: isActive ? 'primary.main' : 'divider',
+                        bgcolor: isActive ? 'primary.50' : 'transparent',
+                        '&:hover': { bgcolor: 'action.hover' },
+                      }}
+                    >
+                      {tile.decorImage ? (
+                        <Box
+                          component="img"
+                          src={tile.decorImage}
+                          sx={{ width: 28, height: 28, objectFit: 'cover', borderRadius: 0.5, flexShrink: 0 }}
+                        />
+                      ) : (
+                        <Box
+                          sx={{
+                            width: 28, height: 28, bgcolor: tile.color, borderRadius: 0.5, flexShrink: 0,
+                            border: '1px solid rgba(0,0,0,0.1)',
+                          }}
+                        />
+                      )}
+                      <Box>
+                        <Typography variant="caption" fontWeight={600} sx={{ display: 'block', lineHeight: 1.2 }}>
+                          {tile.name}
+                        </Typography>
+                        <Typography variant="caption" color="text.secondary" sx={{ fontSize: 10 }}>
+                          {tile.width}×{tile.height} cm
+                        </Typography>
+                      </Box>
+                    </Paper>
+                  );
+                })}
+              </Box>
+            </>
+          )}
+        </Paper>
+      )}
     </Box>
   );
 }

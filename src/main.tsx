@@ -13,15 +13,15 @@ import App from './App.tsx'
 
 const theme = createTheme({
   palette: {
-    primary: { main: '#0095b6' },
-    secondary: { main: '#ffcc00' },
-    error: { main: '#e52636' },
+    primary: { main: '#3b82f6' },
+    secondary: { main: '#f97316' },
+    error: { main: '#ef4444' },
     warning: { main: '#f59e0b' },
-    success: { main: '#2e7d32' },
-    background: { default: '#f0f4f4' },
+    success: { main: '#16a34a' },
+    background: { default: '#f8fafc' },
     text: {
-      primary: '#193137',
-      secondary: '#4c4c52',
+      primary: '#1e293b',
+      secondary: '#64748b',
     },
   },
   typography: {

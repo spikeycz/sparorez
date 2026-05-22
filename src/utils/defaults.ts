@@ -2,12 +2,12 @@ import { v4 as uuid } from 'uuid';
 import type { Room, Wall, TileConfig } from '../types';
 
 export const DEFAULT_TILE_PRESETS: TileConfig[] = [
-  { width: 30, height: 30, name: '30×30', color: '#73979c' },
-  { width: 30, height: 60, name: '30×60', color: '#0095b6' },
-  { width: 60, height: 60, name: '60×60', color: '#c3d3d5' },
-  { width: 25, height: 50, name: '25×50', color: '#d9e4e7' },
-  { width: 20, height: 20, name: '20×20', color: '#193137' },
-  { width: 10, height: 10, name: 'Mozaika 10×10', color: '#ffcc00' },
+  { width: 30, height: 30, name: '30×30', color: '#64748b' },
+  { width: 30, height: 60, name: '30×60', color: '#3b82f6' },
+  { width: 60, height: 60, name: '60×60', color: '#cbd5e1' },
+  { width: 25, height: 50, name: '25×50', color: '#e2e8f0' },
+  { width: 20, height: 20, name: '20×20', color: '#1e293b' },
+  { width: 10, height: 10, name: 'Mozaika 10×10', color: '#f59e0b' },
 ];
 
 function makeWalls(width: number, depth: number, height: number): Wall[] {

@@ -52,7 +52,7 @@ export default function RoomFloorPlan({ room, selectedWallId, onSelectWall }: Pr
   const depthCm = room.depth;
 
   return (
-    <svg width={svgWidth} height={svgHeight} style={{ background: '#f0f4f4', borderRadius: 12 }}>
+    <svg width={svgWidth} height={svgHeight} style={{ background: '#f8fafc', borderRadius: 12 }}>
       {/* Floor area */}
       <defs>
         <clipPath id={`floor-clip-${room.id}`}>
@@ -148,14 +148,14 @@ export default function RoomFloorPlan({ room, selectedWallId, onSelectWall }: Pr
           <g key={`shower-${sc.id}`}>
             <rect
               x={sx} y={sy} width={sw} height={sd}
-              fill="#d9e4e7" fillOpacity={0.4}
-              stroke="#0095b6" strokeWidth={1.5}
+              fill="#e2e8f0" fillOpacity={0.4}
+              stroke="#3b82f6" strokeWidth={1.5}
               strokeDasharray="5,3"
             />
             <text
               x={sx + sw / 2} y={sy + sd / 2}
               textAnchor="middle" dominantBaseline="middle"
-              fontSize={9} fill="#193137" fontWeight={600}
+              fontSize={9} fill="#1e293b" fontWeight={600}
             >
               Sprcha
             </text>
@@ -186,15 +186,15 @@ export default function RoomFloorPlan({ room, selectedWallId, onSelectWall }: Pr
             <g key={`niche-${n.id}`}>
               <rect
                 x={nx} y={ny} width={rw} height={rh}
-                fill="#e8f4f8" fillOpacity={0.6}
-                stroke="#0095b6" strokeWidth={1.5}
+                fill="#eff6ff" fillOpacity={0.6}
+                stroke="#3b82f6" strokeWidth={1.5}
                 strokeDasharray="4,2"
               />
               {rw > 25 && rh > 12 && (
                 <text
                   x={nx + rw / 2} y={ny + rh / 2}
                   textAnchor="middle" dominantBaseline="middle"
-                  fontSize={8} fill="#0095b6" fontWeight={600}
+                  fontSize={8} fill="#3b82f6" fontWeight={600}
                 >
                   Výkl.
                 </text>
@@ -249,9 +249,9 @@ export default function RoomFloorPlan({ room, selectedWallId, onSelectWall }: Pr
             <g key={d.id}>
               {/* Gap in wall */}
               <rect x={x1} y={y1} width={x2 - x1} height={y2 - y1}
-                fill="#f0f4f4" />
+                fill="#f8fafc" />
               {/* Door swing arc */}
-              <path d={arcPath} fill="none" stroke="#0095b6" strokeWidth={1}
+              <path d={arcPath} fill="none" stroke="#3b82f6" strokeWidth={1}
                 strokeDasharray="3,2" opacity={0.6} />
             </g>
           );
@@ -277,7 +277,7 @@ export default function RoomFloorPlan({ room, selectedWallId, onSelectWall }: Pr
             {/* Visible wall */}
             <line
               x1={x1} y1={y1} x2={x2} y2={y2}
-              stroke={isSelected ? '#0095b6' : hasConfig ? '#73979c' : '#193137'}
+              stroke={isSelected ? '#3b82f6' : hasConfig ? '#64748b' : '#1e293b'}
               strokeWidth={isSelected ? 5 : hasConfig ? 4 : 3}
               style={{ cursor: 'pointer' }}
               onClick={() => onSelectWall(wall.id)}
@@ -288,7 +288,7 @@ export default function RoomFloorPlan({ room, selectedWallId, onSelectWall }: Pr
                 cx={(x1 + x2) / 2}
                 cy={(y1 + y2) / 2}
                 r={5}
-                fill="#ffcc00"
+                fill="#f59e0b"
                 stroke="#fff"
                 strokeWidth={1.5}
               />
@@ -301,7 +301,7 @@ export default function RoomFloorPlan({ room, selectedWallId, onSelectWall }: Pr
               dominantBaseline="middle"
               fontSize={13}
               fontWeight={isSelected ? 700 : 500}
-              fill={isSelected ? '#0095b6' : '#193137'}
+              fill={isSelected ? '#3b82f6' : '#1e293b'}
               style={{ cursor: 'pointer', userSelect: 'none' }}
               onClick={() => onSelectWall(wall.id)}
             >
@@ -312,10 +312,10 @@ export default function RoomFloorPlan({ room, selectedWallId, onSelectWall }: Pr
       })}
 
       {/* Dimension labels */}
-      <text x={ox + roomW / 2} y={oy + roomD / 2 - 8} textAnchor="middle" fontSize={12} fill="#73979c">
+      <text x={ox + roomW / 2} y={oy + roomD / 2 - 8} textAnchor="middle" fontSize={12} fill="#64748b">
         {widthCm} × {depthCm} cm
       </text>
-      <text x={ox + roomW / 2} y={oy + roomD / 2 + 8} textAnchor="middle" fontSize={11} fill="#73979c">
+      <text x={ox + roomW / 2} y={oy + roomD / 2 + 8} textAnchor="middle" fontSize={11} fill="#64748b">
         h = {room.height} cm
       </text>
     </svg>
